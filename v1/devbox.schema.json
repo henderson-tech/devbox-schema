@@ -1,0 +1,411 @@
+{
+  "$id": "https://raw.githubusercontent.com/henderson-tech/devbox-schema/main/v1/devbox.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A project's Devbox recipe: what one branch workspace runs (apps, Compose services, scripts), never ports or hosts. It lives at the project repo's root; `devbox config check` lints it against the checkout, `devbox config check --static` against the file alone.",
+  "properties": {
+    "apps": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "build": {
+            "description": "Build: optional build command for `devbox deploy`.",
+            "type": "string"
+          },
+          "cmd": {
+            "description": "Cmd: the long-running command; {port:<name>} expands to the allocated absolute port, {port} to the app's first port.",
+            "type": "string"
+          },
+          "deps": {
+            "additionalProperties": false,
+            "description": "Deps: the dependency step keyed on lockfile content (conf.Deps). On the SYNCED app, like provision.",
+            "properties": {
+              "cmd": {
+                "description": "Cmd: the installer, run in the app's synced checkout — the project's own (FixIt: bash scripts/ci/install-workspace-dependencies.sh), never a bare package-manager call that picks another layout.",
+                "type": "string"
+              },
+              "key": {
+                "description": "Key: files relative to the app's checkout, e.g. [bun.lock, package.json, \"apps/*/package.json\"]; a single-segment glob (filepath.Match) may name several. Hashed in the guest tree after the sync flush.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "profile": {
+                "description": "Profile: the test resource profile the refresh runs under; default small, and never larger than the recipe's resources.test envelope.",
+                "type": "string"
+              },
+              "provision_installs": {
+                "description": "ProvisionInstalls: the app's provision runs Cmd unconditionally, so a provision that passed in an up IS the first install — up records the key's hash instead of installing again. Explicit on purpose: provision text that merely contains Cmd (echoed, or behind a condition that skipped it) is no proof the installer ran.",
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
+          "env_file": {
+            "description": "EnvFile: secret env file name under the workspace's box env dir, seeded via `devbox env push`, never in git. A process sources it; a source_only app keeps it for its post_seed or Compose stack to read.",
+            "type": "string"
+          },
+          "ports": {
+            "description": "Ports: named ports this app binds, in declared order. Offsets within the workspace window are assigned across the recipe deterministically.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "post_seed": {
+            "description": "PostSeed: a command run in this SYNCED app's checkout after EVERY seed_files push — each up (after its provisions) and each run, --no-up included — because every push lands the Mac's raw copies again while provision is hash-gated. It keeps box-side rewrites of seeded files (port and host remaps) in place. It must be idempotent, fast and free of runtime topology: a --no-up run has no leased ports or data slot, so only {workspace}, {namespace} and {state} expand. A failure stops the verb with WS_POST_SEED_FAILED.",
+            "type": "string"
+          },
+          "profiles": {
+            "description": "Profiles makes the app opt-in. It remains part of deterministic port allocation, but is only synthesized when one of these profiles is active.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "provision": {
+            "description": "Provision: one-time setup run in the app's synced checkout by `ws up` after the first sync, before units start. Same {port:<name>} expansion as cmd. Marker-gated; see conf.App.Provision.",
+            "type": "string"
+          },
+          "run_in": {
+            "description": "RunIn: name of a synced sibling app whose checkout this process runs in (the monorepo shape: one synced tree, several processes). Mutually exclusive with sync; the app is not synced itself.",
+            "type": "string"
+          },
+          "seed_files": {
+            "description": "SeedFiles copies ignored, machine-local files from the primary checkout after source sync and before provision. This is the declarative bridge for development credentials: recipes name paths, while Devbox validates and copies them mode 0600 without ever printing their contents.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "source": {
+                  "description": "Source accepts main:<relative-path> for the root project's primary checkout or sync:<relative-path> for this app's resolved checkout. The explicit origin prevents feature-worktree output from becoming accidental credential truth while letting every sibling repo own its own config.",
+                  "type": "string"
+                },
+                "target": {
+                  "description": "Target is relative to this app's synced checkout in the guest.",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "source_only": {
+            "description": "SourceOnly syncs a repository into the workspace without creating a process or consuming a port. Native Compose and sibling apps may use it.",
+            "type": "boolean"
+          },
+          "sync": {
+            "description": "Sync: \".\" (or empty) = the invoking worktree; an absolute/~ path pins another Mac directory. sibling:<repo> uses its primary checkout; paired:<repo> prefers its checkout on the invoking branch, otherwise primary. Instantiation resolves it.",
+            "type": "string"
+          },
+          "sync_ignores": {
+            "description": "SyncIgnores: mirror the essentials of the repo's .gitignore — the generator must never read the synced tree at render time (hermeticity, PR #110).",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "description": "Apps: bare processes devbox runs as systemd user units, mutagen-synced from the Mac worktree. Port NAMES here; numbers are allocated per workspace and injected via {port:<name>} expansion (decision 6).",
+      "type": "object"
+    },
+    "compose": {
+      "additionalProperties": false,
+      "description": "Compose is the native whole-stack contract. Unlike an opaque compose list, every service is declared so Devbox can reset all published ports and namespace every container before anything starts.",
+      "properties": {
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "env_file": {
+          "type": "string"
+        },
+        "env_files": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "env_script": {
+          "type": "string"
+        },
+        "env_source": {
+          "type": "string"
+        },
+        "external_networks": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "files": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "memory": {
+          "description": "Memory is the Compose services' share of the stack's memory need (\"1G\"), for a stack that also runs native apps: admission charges only this part against devbox-docker.slice and the rest against the host. Unset charges the whole need to the slice, an upper bound for its Compose part.",
+          "type": "string"
+        },
+        "ready_timeout": {
+          "description": "ReadyTimeout bounds up's wait for every service to run (a one-shot to exit 0) after a start, as a duration (\"8m\"); unset is DefaultComposeReadyTimeout. A stack whose first start runs long one-shots (migrations, seeding) declares what that start takes.",
+          "type": "string"
+        },
+        "registries": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "services": {
+          "additionalProperties": {
+            "additionalProperties": false,
+            "properties": {
+              "disabled": {
+                "type": "boolean"
+              },
+              "ports": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "description": "Ports maps Devbox's stable name to the container port. Host ports are allocated from the workspace window and never accepted as input.",
+                "type": "object"
+              },
+              "profiles": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "restart": {
+                "description": "Restart overrides the safe on-failure default for processes which may exit cleanly during dependency warm-up and must be retried by Docker. It holds only while the stack runs: `always` renders as unless-stopped (a daemon restart revives `always` after any stop), a parked stack is disarmed to `no`, and compose-run re-arms the policy on up.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "object"
+        },
+        "source": {
+          "type": "string"
+        },
+        "workdir": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "data_init": {
+      "description": "DataInit names the scripts entry devbox runs once on a fresh data set: right after the up whose start found every Compose volume of the workspace absent or empty (a new workspace, a --no-data move's target), through the same run path as `devbox run <script>`, with the stack up. A volume holding data is never fresh, and the pending marker is taken before the run, so a non-idempotent seeder runs at most once (ws/data_init.go). Refused on a source: native recipe.",
+      "type": "string"
+    },
+    "data_init_paths": {
+      "description": "DataInitPaths are datastore bind directories relative to {state}. They are surveyed before the first start, never the whole state tree.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "datasets": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "volume": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "description": "Datasets are loaded from the store into a fresh workspace; Volumes marks Compose volumes regenerable — neither is copied by a move or a cold park (datasets.go).",
+      "type": "object"
+    },
+    "docs": {
+      "description": "Docs names the project's own devbox notes (a Markdown file relative to this recipe's directory): what an agent reads before operating the project. It lives in the project, never in Devbox's skill; config check, setup and status hand it out as data.context.docs. An older CLI's strict decode refuses the key, never ignores it.",
+      "type": "string"
+    },
+    "project": {
+      "type": "string"
+    },
+    "requires": {
+      "description": "Requires names box capabilities the workspace needs (boxes.yaml `provides`): registry-mirror, litellm, forge-ai, committed-band, pwf-shared, portal. Placement only considers boxes providing every one; a recipe requiring nothing lands wherever headroom is best.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "resources": {
+      "additionalProperties": false,
+      "description": "Resources selects centrally-owned workspace and test envelopes. A command override never changes these limits.",
+      "properties": {
+        "memory": {
+          "description": "Memory is the project's ESTIMATED hot footprint (\"6G\"), not a limit: admission subtracts it from headroom, the hot ceiling sums it across running stacks, and the sweep reports drift against the measured slice peak (2026-09-02 memory-pressure decisions 9/10). The profile ceilings above stay the enforced envelope.",
+          "type": "string"
+        },
+        "test": {
+          "type": "string"
+        },
+        "workspace": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "schedule": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "cron": {
+            "type": "string"
+          },
+          "script": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "scripts": {
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "type": "string"
+              },
+              "image": {
+                "type": "string"
+              },
+              "profile": {
+                "description": "Profile is the test resource profile this script runs under when the run names none (`--resource-profile` beats it): small, medium, standard or heavy, never past the recipe's resources.test envelope (decodeRecipe refuses it). Empty runs under the envelope itself.",
+                "type": "string"
+              },
+              "stdin_refs": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "StdinRefs maps JSON fields to Onyx refs. The Mac injects them into the guest's stdin; no values belong in a recipe or a workspace env file.",
+                "type": "object"
+              },
+              "up": {
+                "description": "Nil preserves existing recipes' app-start behavior. False prepares only source sync; the command is still admitted against its RAM profile.",
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "description": "Scripts: named entry points (`test`, `migrate`, `seed`, …) of arbitrary shell run by `devbox run <name>` inside the workspace's synced checkout. Same {port:<name>} expansion as app cmds. Devbox is use-agnostic about what a script does — only non-empty is enforced. A scalar is the command; the mapping form `{cmd, image}` pins the command inside a container image (see Script).",
+      "type": "object"
+    },
+    "shared": {
+      "additionalProperties": false,
+      "description": "Shared names Devbox-managed or externally-owned services required by every instance of this recipe. Names intentionally match Compose service names so an agent can move between both models without a translation table.",
+      "properties": {
+        "required": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "shared_topology": {
+      "description": "SharedTopology is how a checkout reaches the project's shared data topology (its devbox.shared.yaml): \"opt-in\" (absent: by hand, `devbox config reservine-shared --apply`) or \"born-shared\" (a workspace that never started opts in before its first start — ws/reservine_born_shared.go, docs/specs/2026-10-09-reservine-born-shared-decisions.md). Reservine only. An older CLI's strict decode refuses the key, never ignores it.",
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "system_packages": {
+      "additionalProperties": false,
+      "description": "SystemPackages derives the guest apt packages the project needs from its production Dockerfile (system_packages.go); the box warns about the ones it lacks.",
+      "properties": {
+        "apt": {
+          "description": "Apt: Ubuntu noble names no Dockerfile carries — test-only tools, or the translation of an apk/other-distro stage the parser refuses.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "except": {
+          "description": "Except: container-only or build-time names (an init like dumb-init, an installer's unzip) the guest does not need.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "from": {
+          "description": "From: Dockerfiles, clean paths relative to the invoking worktree.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "uses": {
+      "description": "Uses: shared-services.yaml refs — infra consumed, never owned. Deprecated: use shared.required. Kept so existing recipes remain valid.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "verify": {
+      "description": "Verify names the scripts a verdict runs, each its own admitted run (recipe_verify.go); Schedule the scripts run on a cron. Neither ever reaches conf.Workspace, so editing them never restarts a stack, and the typed worktree patch cannot express them. Decode checks their shape only — VerifyProblems/ScheduleProblems the references — so a gate typo never breaks up or run.",
+      "oneOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "profiles": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "scripts": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    },
+    "volumes": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "project",
+    "apps"
+  ],
+  "title": "devbox.yaml",
+  "type": "object"
+}
