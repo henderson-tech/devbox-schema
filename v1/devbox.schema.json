@@ -264,7 +264,7 @@
       "type": "string"
     },
     "requires": {
-      "description": "Requires names box capabilities the workspace needs (boxes.yaml `provides`): registry-mirror, litellm, forge-ai, committed-band, pwf-shared, portal. Placement only considers boxes providing every one; a recipe requiring nothing lands wherever headroom is best.",
+      "description": "Requires names box capabilities the workspace needs (boxes.yaml `provides`): registry-mirror, litellm, forge-ai, committed-band, pwf-shared, portal. Placement only considers boxes providing every one; a recipe requiring nothing lands on the primary box while it qualifies, else wherever headroom is best.",
       "items": {
         "type": "string"
       },
