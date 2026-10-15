@@ -231,6 +231,35 @@
       "description": "Docs names the project's own devbox notes (a Markdown file relative to this recipe's directory): what an agent reads before operating the project. It lives in the project, never in Devbox's skill; config check, setup and status hand it out as data.context.docs. An older CLI's strict decode refuses the key, never ignores it.",
       "type": "string"
     },
+    "logins": {
+      "additionalProperties": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "onyx": {
+              "description": "Onyx is the vault item holding this account (onyx://<project>/<item>): the Onyx browser extension fills the sign-in form from it, and an agent signs in with web_login.",
+              "type": "string"
+            },
+            "role": {
+              "description": "Role names what the account is for (admin, approver), unique per address, lowercase [a-z0-9-].",
+              "type": "string"
+            },
+            "shared": {
+              "description": "Shared marks an account that also exists outside the workspace (a shared identity provider, a deployed tenant): its password is the Onyx item's, never DevPassword, so a shared row requires onyx.",
+              "type": "boolean"
+            },
+            "user": {
+              "description": "User is what the sign-in form's user field takes.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "description": "Logins are the test accounts a person or an agent signs in with, keyed by the address name `devbox url` prints (an app, or a Compose port key). `devbox url` and the ready block hand them out beside the address. An older CLI's strict decode refuses the key, never ignores it.",
+      "type": "object"
+    },
     "project": {
       "type": "string"
     },
