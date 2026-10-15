@@ -240,13 +240,13 @@
               "description": "Onyx is the vault item holding this account (onyx://<project>/<item>): the Onyx browser extension fills the sign-in form from it, and an agent signs in with web_login.",
               "type": "string"
             },
+            "password": {
+              "description": "Password says how the account signs in: absent, with the seeded DevPassword; \"onyx\", with its Onyx item's password (no public dev value, an account that exists outside the workspace included), so it requires onyx; \"none\", through the app's own quick-login, as a passwordless app's seeded personas do. The recipe never carries a password.",
+              "type": "string"
+            },
             "role": {
               "description": "Role names what the account is for (admin, approver), unique per address, lowercase [a-z0-9-].",
               "type": "string"
-            },
-            "shared": {
-              "description": "Shared marks an account that also exists outside the workspace (a shared identity provider, a deployed tenant): its password is the Onyx item's, never DevPassword, so a shared row requires onyx.",
-              "type": "boolean"
             },
             "user": {
               "description": "User is what the sign-in form's user field takes.",
