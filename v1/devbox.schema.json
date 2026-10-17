@@ -46,6 +46,24 @@
             "description": "EnvFile: secret env file name under the workspace's box env dir, seeded via `devbox env push`, never in git. A process sources it; a source_only app keeps it for its post_seed or Compose stack to read.",
             "type": "string"
           },
+          "logs": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "properties": {
+                "command": {
+                  "description": "Command: one shell line run in the app's checkout with its environment, its output the log ({workspace}, {state} and {port:<name>} expand). It runs only while someone reads it and the workspace is up, bounded, and never enters a container (docker/compose exec, nsenter): its CPU would count as the app's.",
+                  "type": "string"
+                },
+                "file": {
+                  "description": "File: a file the app writes, relative to its checkout or under {state}/; rotation and truncation are followed.",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "description": "Logs names the app's log sources beyond the ones every app has (its process's journal, its Compose services' output), keyed by a lowercase name (docs/reference/logs.md): a file the app writes, or a command whose output is the log. `devbox logs` and the console read them masked; the box reads them from the applied recipe.",
+            "type": "object"
+          },
           "ports": {
             "description": "Ports: named ports this app binds, in declared order. Offsets within the workspace window are assigned across the recipe deterministically.",
             "items": {
@@ -258,6 +276,20 @@
         "type": "array"
       },
       "description": "Logins are the test accounts a person or an agent signs in with, keyed by the address name `devbox url` prints (an app, or a Compose port key). `devbox url` and the ready block hand them out beside the address. An older CLI's strict decode refuses the key, never ignores it.",
+      "type": "object"
+    },
+    "logs": {
+      "additionalProperties": false,
+      "description": "Logs is the recipe's app-log policy (docs/reference/logs.md): what the box-side filter of `devbox logs` and the console leaves readable. The box reads it from the applied recipe; it never reaches workspace.yaml. An older CLI's strict decode refuses the key, never ignores it.",
+      "properties": {
+        "public": {
+          "description": "Public lists the dotenv keys of the workspace's env and seed files whose values are no secret (NODE_ENV, REDIS_HOST): the log filter leaves them readable. A registry credential, a URL's password or a token-shaped value is masked whatever this says.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
       "type": "object"
     },
     "project": {
