@@ -281,7 +281,7 @@
             "type": "object"
           },
           "env_file": {
-            "description": "EnvFile are workspace env files `devbox env push` seeds, for a checkout no app of its name runs in.",
+            "description": "EnvFile are workspace env files `devbox env push` seeds, for a checkout no app of its name runs in, sourced before each of its provision, post_seed and deps steps.",
             "items": {
               "oneOf": [
                 {
