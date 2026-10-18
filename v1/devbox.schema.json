@@ -296,7 +296,7 @@
       "type": "string"
     },
     "requires": {
-      "description": "Requires names box capabilities the workspace needs (boxes.yaml `provides`): registry-mirror, litellm, forge-ai, committed-band, pwf-shared, portal. Placement only considers boxes providing every one; a recipe requiring nothing lands on the primary box while it qualifies, else wherever headroom is best.",
+      "description": "Requires is what a box must offer the workspace; it never installs anything. A bare word is a box capability (boxes.yaml `provides`): registry-mirror, litellm, forge-ai, committed-band, pwf-shared, portal. `<tool>>=<X.Y.Z>` is a minimum of a fleet tool (claude, vitrinka, vybava) the box's converge record must meet, refused TOOL_FLEET_BEHIND before an up or run syncs. Placement only considers boxes offering every one; a recipe requiring nothing lands on the primary box while it qualifies, else wherever headroom is best.",
       "items": {
         "type": "string"
       },
