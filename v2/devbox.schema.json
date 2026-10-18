@@ -784,7 +784,7 @@
             "type": "array"
           },
           "image": {
-            "description": "Image runs the steps in that container image with /bin/sh.",
+            "description": "Image runs the steps in that container image with /bin/sh: a pinned reference, or playwright@<version> (the official mcr.microsoft.com/playwright:v<version>-noble), or playwright, whose version is the checkout lockfile's @playwright/test (or playwright). The guest's toolchain (mise) is mounted read-only and on its PATH.",
             "type": "string"
           },
           "in": {
@@ -814,8 +814,23 @@
               }
             ]
           },
+          "network": {
+            "description": "Network is the image lane's: host (the default: the box's own ports on localhost) or isolated (the container's own network namespace).",
+            "enum": [
+              "host",
+              "isolated"
+            ],
+            "type": "string"
+          },
           "outputs": {
             "description": "Outputs are paths relative to the script's cwd in its checkout, kept with the run on the box when it ends, pass or fail, and fetched back to the same path in the Mac checkout (one the sync ignores). The last 5 runs of a script per workspace keep everything; older runs keep a compact record (`devbox runs history`).",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "ports": {
+            "description": "Ports are run leases: each run leases its own port per name from the box's window for its life, released however it ends, and {port:<name>} in the script's texts is that run's port. Never an app's or a Compose service's port name.",
             "items": {
               "type": "string"
             },
@@ -828,6 +843,39 @@
           "size": {
             "description": "Size is the test resource profile: small, medium, standard or heavy.",
             "type": "string"
+          },
+          "split": {
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "glob": {
+                      "description": "a directory pattern in the script's checkout, its last segment * or ? (modules/*/): each matching directory's name is an item",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "glob"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "description": "Split makes one admitted run per item, named <script>-<item>: {<key>: [items]} as written, or {<key>: {glob: <dir>/*/}}, the matching directories' names in the script's checkout, sorted. {<key>} in the script's cmd, env and cwd is the item; `devbox run <script>` runs every item, `devbox run <script>-<item>` one.",
+            "maxProperties": 1,
+            "minProperties": 1,
+            "propertyNames": {
+              "pattern": "^[a-z][a-z_]*$"
+            },
+            "type": "object"
           },
           "stdin_refs": {
             "additionalProperties": {
