@@ -8,6 +8,13 @@
       "additionalProperties": {
         "additionalProperties": false,
         "properties": {
+          "after": {
+            "description": "After are the apps and Compose services that must be ready (each by its own readiness) before the app's process starts; a run that needs the app starts them too.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "build": {
             "description": "Build is `devbox deploy`'s steps.",
             "items": {
@@ -109,15 +116,33 @@
             "type": "array"
           },
           "ready": {
-            "description": "Ready is when the app counts as up: tcp (its first port listens, the default) or none.",
-            "enum": [
-              "tcp",
-              "none"
-            ],
-            "type": "string"
+            "description": "Ready is when the app counts as up: tcp (its first port listens, the default), none, or {http: <path>} (an HTTP GET of its first port at that path answers 2xx or 3xx).",
+            "oneOf": [
+              {
+                "enum": [
+                  "tcp",
+                  "none"
+                ],
+                "type": "string"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "http": {
+                    "description": "The path an HTTP GET of the app's first port answers 2xx or 3xx at once the app is ready.",
+                    "pattern": "^/[A-Za-z0-9._~/-]*(\\?[A-Za-z0-9._~=&%+-]*)?$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "http"
+                ],
+                "type": "object"
+              }
+            ]
           },
           "ready_timeout": {
-            "description": "ReadyTimeout bounds up's wait for it (\"5m\").",
+            "description": "ReadyTimeout bounds the wait for it to be ready (\"5m\"): up's, and that of every app after it.",
             "type": "string"
           },
           "seed_files": {
@@ -771,7 +796,7 @@
             "type": "boolean"
           },
           "needs": {
-            "description": "Needs is what runs first: source (the default: code, seeds, toolchain and deps; no stack and no lock), stack, or a list of apps and Compose services.",
+            "description": "Needs is what runs first: source (the default: code, seeds, toolchain and deps; no stack and no lock), stack, or a list of apps and Compose services, which alone start, with what they are after.",
             "oneOf": [
               {
                 "enum": [
