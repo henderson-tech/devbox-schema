@@ -789,6 +789,13 @@
               }
             ]
           },
+          "outputs": {
+            "description": "Outputs are paths relative to the script's cwd in its checkout, kept with the run on the box when it ends, pass or fail, and fetched back to the same path in the Mac checkout (one the sync ignores). The last 5 runs of a script per workspace keep everything; older runs keep a compact record (`devbox runs history`).",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "service": {
             "description": "Service runs the steps inside that Compose service of the workspace's stack, with /bin/sh; it needs that service.",
             "type": "string"
