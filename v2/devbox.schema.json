@@ -1,0 +1,947 @@
+{
+  "$id": "https://raw.githubusercontent.com/henderson-tech/devbox-schema/main/v2/devbox.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A project's Devbox recipe in the v2 dialect (version: 2): intent blocks — checkouts, apps, Compose, scripts, step lists, env, tokens, databases, readiness — that compile onto one branch workspace's runtime, never ports or hosts. It lives at the project repo's root, in a strict YAML subset (no anchors, aliases, merge keys, tags or duplicate keys; quote text YAML would read as a bool, number, null or date); `devbox config check` lints it against the checkout, `devbox config check --static` against the file alone.",
+  "properties": {
+    "apps": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "build": {
+            "description": "Build is `devbox deploy`'s steps.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "cmd": {
+            "description": "Cmd is the one long-running process (required).",
+            "type": "string"
+          },
+          "cwd": {
+            "description": "Cwd is the directory in that checkout it starts in.",
+            "type": "string"
+          },
+          "env": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Env is set for the process, after the recipe's and the checkout's.",
+            "type": "object"
+          },
+          "env_file": {
+            "description": "EnvFile are workspace env files (`devbox env push`) sourced before it starts: a name, {file, required: true}, or {file, keys: [...]}.",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "file": {
+                      "description": "File is the env file's name under the workspace's env directory.",
+                      "type": "string"
+                    },
+                    "keys": {
+                      "description": "Keys, when set, are the only variables taken from it.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "required": {
+                      "description": "Required makes a missing file a failure, not a skip.",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "file"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "env_from": {
+            "description": "EnvFrom are checkout files sourced (set -a) before it starts.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "in": {
+            "description": "In is the checkout it runs in: default the checkout of its name, else home.",
+            "type": "string"
+          },
+          "logs": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "properties": {
+                "command": {
+                  "description": "Command is one shell line, run in the app's checkout with its environment while someone reads it, whose output is the log.",
+                  "type": "string"
+                },
+                "file": {
+                  "description": "File is a file the app writes, relative to its checkout or under {state}/; rotation and truncation are followed.",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "description": "Logs names log sources beyond the process journal.",
+            "type": "object"
+          },
+          "ports": {
+            "description": "Ports are the app's named ports, default [<name>]; the first is its URL and $PORT.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "profiles": {
+            "description": "Profiles makes the app opt-in.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "ready": {
+            "description": "Ready is when the app counts as up: tcp (its first port listens, the default) or none.",
+            "enum": [
+              "tcp",
+              "none"
+            ],
+            "type": "string"
+          },
+          "ready_timeout": {
+            "description": "ReadyTimeout bounds up's wait for it (\"5m\").",
+            "type": "string"
+          },
+          "seed_files": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "SeedFiles land in its checkout, as a checkout's do.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "cmd"
+        ],
+        "type": "object"
+      },
+      "description": "Apps are the processes Devbox supervises, one each.",
+      "type": "object"
+    },
+    "checkouts": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "box_owned": {
+            "description": "BoxOwned are paths the box writes: never synced, always kept; one ending in / is created.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "deps": {
+            "description": "Deps are the checkout's dependency entries, each re-run only when its inputs change: a preset (bun npm pnpm yarn composer playwright), a preset with settings, or {cmd, key, creates, size}.",
+            "items": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "bun",
+                    "npm",
+                    "pnpm",
+                    "yarn",
+                    "composer",
+                    "playwright"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "browsers": {
+                      "description": "Browsers are what the playwright preset installs: default [chromium].",
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "flags": {
+                      "description": "Flags are appended to a preset's command.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "key": {
+                      "description": "Key are the files whose content decides a re-run: a preset's own lockfiles by default.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "preset": {
+                      "description": "Preset names a built-in installer: bun, npm, pnpm, yarn, composer or playwright.",
+                      "enum": [
+                        "bun",
+                        "npm",
+                        "pnpm",
+                        "yarn",
+                        "composer",
+                        "playwright"
+                      ],
+                      "type": "string"
+                    },
+                    "roots": {
+                      "description": "Roots are the directories, relative to the checkout, the preset installs in: default [.].",
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "size": {
+                      "description": "Size is the test resource profile it runs under: default small.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "preset"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "cmd": {
+                      "description": "Cmd is the checkout's own installer.",
+                      "type": "string"
+                    },
+                    "creates": {
+                      "description": "Creates is a path the installer leaves: absent, the entry re-runs.",
+                      "type": "string"
+                    },
+                    "key": {
+                      "description": "Key are the files whose content decides a re-run: a preset's own lockfiles by default.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "size": {
+                      "description": "Size is the test resource profile it runs under: default small.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cmd",
+                    "key"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "env": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Env is set in the checkout's steps, apps and scripts.",
+            "type": "object"
+          },
+          "env_file": {
+            "description": "EnvFile are workspace env files `devbox env push` seeds, for a checkout no app of its name runs in.",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "file": {
+                      "description": "File is the env file's name under the workspace's env directory.",
+                      "type": "string"
+                    },
+                    "keys": {
+                      "description": "Keys, when set, are the only variables taken from it.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "required": {
+                      "description": "Required makes a missing file a failure, not a skip.",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "file"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "env_from": {
+            "description": "EnvFrom are checkout files sourced (set -a) before each step.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "from": {
+            "description": "From is where the tree comes from (required): . (this worktree), sibling:<repo>, paired:<repo> (a topology patch only), ~/path or /abs.",
+            "type": "string"
+          },
+          "git": {
+            "description": "Git is absent or init: init gives the box tree an empty repository.",
+            "enum": [
+              "init"
+            ],
+            "type": "string"
+          },
+          "home": {
+            "description": "Home marks the default `in:` of apps, Compose and scripts. Implied when exactly one checkout is from: .; otherwise exactly one says it.",
+            "type": "boolean"
+          },
+          "post_seed": {
+            "description": "PostSeed is the steps run after every seed push: identity tokens only.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "profiles": {
+            "description": "Profiles makes the checkout opt-in: synced only while one is active.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "provision": {
+            "description": "Provision is the checkout's one-time steps; a `deps` step runs the deps entries there. Re-runs when its marker moves.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "seed_files": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "SeedFiles maps a target in the checkout to its source: main (the same path in the primary checkout), main:<path> or sync:<path>; mode 0600.",
+            "type": "object"
+          },
+          "sync_ignores": {
+            "description": "SyncIgnores are rendered after the built-in ignores, in written order; a leading ! re-includes.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "toolchain": {
+            "description": "Toolchain overrides the recipe's per tool: a map, or pins.",
+            "oneOf": [
+              {
+                "const": "pins",
+                "type": "string"
+              },
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "from"
+        ],
+        "type": "object"
+      },
+      "description": "Checkouts are the source trees: default, this repo as `repo`. A checkout's name is its box directory, ~/ws/<ws>/<name>: never rename a live one.",
+      "type": "object"
+    },
+    "compose": {
+      "additionalProperties": false,
+      "description": "Compose is the native whole-stack contract: every service declared.",
+      "properties": {
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Env is the stack's environment; a checkout path is {dir:x}, and no $ is expanded.",
+          "type": "object"
+        },
+        "env_file": {
+          "description": "EnvFile is a workspace env file the stack reads.",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "file": {
+                    "description": "File is the env file's name under the workspace's env directory.",
+                    "type": "string"
+                  },
+                  "keys": {
+                    "description": "Keys, when set, are the only variables taken from it.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "required": {
+                    "description": "Required makes a missing file a failure, not a skip.",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "env_files": {
+          "description": "EnvFiles are workdir-relative --env-file arguments.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "env_script": {
+          "description": "EnvScript is sourced for the stack's environment.",
+          "type": "string"
+        },
+        "env_source": {
+          "description": "EnvSource seeds a missing env_file from this Mac path.",
+          "type": "string"
+        },
+        "external_networks": {
+          "description": "ExternalNetworks are networks the stack joins.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "files": {
+          "description": "Files are the Compose files (required).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "in": {
+          "description": "In is the checkout the stack's files live in: default home.",
+          "type": "string"
+        },
+        "memory": {
+          "description": "Memory is the Compose share of resources.memory.",
+          "type": "string"
+        },
+        "ready_timeout": {
+          "description": "ReadyTimeout bounds up's wait for every service (\"5m\").",
+          "type": "string"
+        },
+        "registries": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Registries maps a registry to the env name of its token.",
+          "type": "object"
+        },
+        "services": {
+          "additionalProperties": {
+            "additionalProperties": false,
+            "properties": {
+              "ports": {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "description": "Ports maps a stable port name to the container port.",
+                "type": "object"
+              },
+              "profiles": {
+                "description": "Profiles makes the service opt-in.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "restart": {
+                "description": "Restart is on-failure (the default), 'no', always or unless-stopped; always runs as unless-stopped, and a parked stack is disarmed.",
+                "enum": [
+                  "on-failure",
+                  "no",
+                  "always",
+                  "unless-stopped"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "description": "Services is every compiled service (required).",
+          "type": "object"
+        },
+        "workdir": {
+          "description": "Workdir is the stack's directory in that checkout.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "files",
+        "services"
+      ],
+      "type": "object"
+    },
+    "data_init": {
+      "description": "DataInit names the stack script run once on a fresh data set.",
+      "type": "string"
+    },
+    "data_init_paths": {
+      "description": "DataInitPaths are datastore bind directories relative to {state}.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "databases": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "engine": {
+            "description": "Engine is the shared engine that holds it: postgres.",
+            "enum": [
+              "postgres"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "description": "Name is the database's name; default <key>_{namespace}. Only identity tokens expand in it.",
+            "type": "string"
+          },
+          "profiles": {
+            "description": "Profiles makes it opt-in: created only while one is active.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "engine"
+        ],
+        "type": "object"
+      },
+      "description": "Databases are created for each workspace on the shared engine before provision; {db:x} is one's URL.",
+      "type": "object"
+    },
+    "datasets": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "ref": {
+            "description": "Ref is the store's dataset, pinned to a version (required): <name>@<version>.",
+            "type": "string"
+          },
+          "volume": {
+            "description": "Volume is the Compose volume it loads into.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "type": "object"
+      },
+      "description": "Datasets are loaded from the store into a fresh workspace.",
+      "type": "object"
+    },
+    "docs": {
+      "description": "Docs names the project's devbox notes, relative to this file.",
+      "type": "string"
+    },
+    "env": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Env is set in every guest shell, app and script of the recipe.",
+      "type": "object"
+    },
+    "logins": {
+      "additionalProperties": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "onyx": {
+              "description": "Onyx is the vault item holding the account (onyx://<project>/<item>).",
+              "type": "string"
+            },
+            "password": {
+              "description": "Password says how it signs in: absent (the seeded DevPassword), onyx (its Onyx item's) or none (the app's quick-login). The recipe never carries a password.",
+              "type": "string"
+            },
+            "role": {
+              "description": "Role names what the account is for (admin), unique per address, lowercase [a-z0-9-] (required).",
+              "type": "string"
+            },
+            "user": {
+              "description": "User is what the sign-in form's user field takes (required).",
+              "type": "string"
+            }
+          },
+          "required": [
+            "role",
+            "user"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "description": "Logins are the test accounts of an address `devbox url` prints.",
+      "type": "object"
+    },
+    "logs": {
+      "additionalProperties": false,
+      "description": "Logs is the recipe's app-log policy.",
+      "properties": {
+        "public": {
+          "description": "Public are the env and seed-file keys whose values are no secret: the log filter leaves them readable.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "params": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Params are the {param:x} values, each a default `devbox up --set x=<value>` replaces for the worktree.",
+      "type": "object"
+    },
+    "project": {
+      "description": "Project names the project's workspaces: lowercase [a-z0-9-].",
+      "type": "string"
+    },
+    "requires": {
+      "description": "Requires is what a box must offer: a capability, or <tool>>=<X.Y.Z> for claude, vybava or vitrinka. Each {box:x} token used also requires endpoint x.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "resources": {
+      "additionalProperties": false,
+      "description": "Resources selects the workspace and test envelopes and the estimated hot footprint.",
+      "properties": {
+        "memory": {
+          "description": "Memory is the estimated hot footprint (\"4G\").",
+          "type": "string"
+        },
+        "test": {
+          "description": "Test is the test envelope runs are bounded by.",
+          "type": "string"
+        },
+        "workspace": {
+          "description": "Workspace is the workspace envelope: small, medium, standard or heavy.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "schedule": {
+      "description": "Schedule runs scripts on a cron.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "cron": {
+            "description": "Cron is when it runs (required): 5 fields, UTC ('0 3 * * *').",
+            "type": "string"
+          },
+          "script": {
+            "description": "Script is the scripts entry to run (required).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "script",
+          "cron"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "scripts": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "args": {
+            "description": "Args is {args}' value when the run passes none.",
+            "type": "string"
+          },
+          "cmd": {
+            "description": "Cmd is the script's steps (required), run in order until one fails.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "cwd": {
+            "description": "Cwd is the directory in that checkout.",
+            "type": "string"
+          },
+          "env": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Env is set for every step.",
+            "type": "object"
+          },
+          "env_file": {
+            "description": "EnvFile are workspace env files sourced before each step.",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "file": {
+                      "description": "File is the env file's name under the workspace's env directory.",
+                      "type": "string"
+                    },
+                    "keys": {
+                      "description": "Keys, when set, are the only variables taken from it.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "required": {
+                      "description": "Required makes a missing file a failure, not a skip.",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "file"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "env_from": {
+            "description": "EnvFrom are checkout files sourced (set -a) before each step.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "image": {
+            "description": "Image runs the steps in that container image with /bin/sh.",
+            "type": "string"
+          },
+          "in": {
+            "description": "In is the checkout the steps start in: default home.",
+            "type": "string"
+          },
+          "keep_going": {
+            "description": "KeepGoing runs every step whatever fails; the script fails with the first failing step's exit code.",
+            "type": "boolean"
+          },
+          "needs": {
+            "description": "Needs is what runs first: source (the default: code, seeds, toolchain and deps; no stack and no lock), stack, or a list of apps and Compose services.",
+            "oneOf": [
+              {
+                "enum": [
+                  "source",
+                  "stack"
+                ],
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          },
+          "service": {
+            "description": "Service runs the steps inside that Compose service of the workspace's stack, with /bin/sh; it needs that service.",
+            "type": "string"
+          },
+          "size": {
+            "description": "Size is the test resource profile: small, medium, standard or heavy.",
+            "type": "string"
+          },
+          "stdin_refs": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "StdinRefs maps JSON fields to Onyx refs the Mac streams on stdin.",
+            "type": "object"
+          },
+          "toolchain": {
+            "description": "Toolchain overrides the checkout's per tool.",
+            "oneOf": [
+              {
+                "const": "pins",
+                "type": "string"
+              },
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "cmd"
+        ],
+        "type": "object"
+      },
+      "description": "Scripts are the named entry points of `devbox run <name>`.",
+      "type": "object"
+    },
+    "shared": {
+      "additionalProperties": false,
+      "description": "Shared names the Devbox-managed services every instance requires.",
+      "properties": {
+        "required": {
+          "description": "Required names the shared services every instance needs.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "shared_topology": {
+      "description": "SharedTopology is opt-in or born-shared (Reservine only).",
+      "enum": [
+        "opt-in",
+        "born-shared"
+      ],
+      "type": "string"
+    },
+    "source": {
+      "description": "Source is synced (the default) or native, where the box owns real git checkouts; a live workspace never changes it.",
+      "enum": [
+        "synced",
+        "native"
+      ],
+      "type": "string"
+    },
+    "system_packages": {
+      "additionalProperties": false,
+      "description": "SystemPackages derives the guest apt packages from Dockerfiles.",
+      "properties": {
+        "apt": {
+          "description": "Apt are Ubuntu noble names no Dockerfile carries.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "except": {
+          "description": "Except are container-only or build-time names (dumb-init) the guest does not need.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "from": {
+          "description": "From are Dockerfiles, clean paths relative to the worktree, whose apt installs the guest gets.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "toolchain": {
+      "description": "Toolchain is every checkout's tool versions, installed and selected through mise: a map of tool to version, or pins (each checkout's own mise.toml or .tool-versions).",
+      "oneOf": [
+        {
+          "const": "pins",
+          "type": "string"
+        },
+        {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      ]
+    },
+    "verify": {
+      "additionalProperties": false,
+      "description": "Verify names the scripts a verdict runs and the profiles it activates.",
+      "properties": {
+        "profiles": {
+          "description": "Profiles are activated for the verdict's run.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "scripts": {
+          "description": "Scripts are the scripts a verdict runs (required, at least one); the gate compares each one's canonical execution form.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "scripts"
+      ],
+      "type": "object"
+    },
+    "version": {
+      "const": 2,
+      "description": "Version is 2, the dialect.",
+      "type": "integer"
+    },
+    "volumes": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Volumes marks Compose volumes regenerable.",
+      "type": "object"
+    }
+  },
+  "required": [
+    "version",
+    "project"
+  ],
+  "title": "devbox.yaml (recipe v2)",
+  "type": "object"
+}
