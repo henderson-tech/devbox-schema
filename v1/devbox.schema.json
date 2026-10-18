@@ -96,7 +96,7 @@
               "additionalProperties": false,
               "properties": {
                 "source": {
-                  "description": "Source accepts main:<relative-path> for the root project's primary checkout or sync:<relative-path> for this app's resolved checkout. The explicit origin prevents feature-worktree output from becoming accidental credential truth while letting every sibling repo own its own config.",
+                  "description": "Source accepts main:<relative-path> for the root project's primary checkout, sync:<relative-path> for this app's resolved checkout, or onyx:<target> for the env file Onyx renders for <target>, bound by <target>.schema.yaml in this app's resolved checkout (onyxd writes it straight into the push; the Mac holds no copy). The explicit origin prevents feature-worktree output from becoming accidental credential truth while letting every sibling repo own its own config.",
                   "type": "string"
                 },
                 "target": {

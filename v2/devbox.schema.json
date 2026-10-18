@@ -362,7 +362,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "SeedFiles maps a target in the checkout to its source: main (the same path in the primary checkout), main:<path> or sync:<path>; mode 0600.",
+            "description": "SeedFiles maps a target in the checkout to its source: main (the same path in the primary checkout), main:<path>, sync:<path>, onyx (the env file Onyx renders for the target, bound by <target>.schema.yaml in this checkout) or onyx:<target>; mode 0600.",
             "type": "object"
           },
           "sync_ignores": {
