@@ -558,7 +558,7 @@
             "type": "string"
           },
           "name": {
-            "description": "Name is the database's name; default <key>_{namespace}. Only identity tokens expand in it.",
+            "description": "Name is the database's name; default <key>_{namespace}. Only {namespace} expands in it.",
             "type": "string"
           },
           "profiles": {
