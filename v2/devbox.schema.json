@@ -494,6 +494,10 @@
           "additionalProperties": {
             "additionalProperties": false,
             "properties": {
+              "allow_root": {
+                "description": "AllowRoot declares that this service runs as root on purpose (a one-shot volume-ownership repair): it lifts only the render's root-user check, never a capability, security_opt or privileged refusal.",
+                "type": "boolean"
+              },
               "ports": {
                 "additionalProperties": {
                   "type": "integer"
