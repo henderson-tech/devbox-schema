@@ -844,6 +844,13 @@
             "description": "Service runs the steps inside that Compose service of the workspace's stack, with /bin/sh; it needs that service.",
             "type": "string"
           },
+          "share_inputs": {
+            "description": "ShareInputs opts a hermetic verification into active-run sharing: the files copied into its frozen checkout.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "size": {
             "description": "Size is the test resource profile: small, medium, standard or heavy.",
             "type": "string"
